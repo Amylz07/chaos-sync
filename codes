@@ -251,3 +251,45 @@ while k<len(d1_list_outer_layer) and k<len(d2_list):
     # print(peaks_composition_pie_chart(peaks_list_set, count_list_normalized))
 
     k+=1
+
+# storing data for heatmap
+x1_y1_IQR_matrix = np.array_split(x1_y1_IQR_list[:len(x1_y1_IQR_list)-50], d2_repeat_times)
+x1_y1_number_of_crossings_matrix = np.array_split(x1_y1_number_of_crossings_list[:len(x1_y1_IQR_list)-50], d2_repeat_times)
+x1_y1_peak_PE_matrix = np.array_split(x1_y1_peak_PE_list[:len(x1_y1_IQR_list)-50], d2_repeat_times)
+x1_y1_peaks_composition_complexity_matrix = np.array_split(x1_y1_peaks_composition_complexity_list[:len(x1_y1_IQR_list)-50], d2_repeat_times)
+x1_y1_peaks_composition_complexity_normalized_matrix = np.array_split(x1_y1_peaks_composition_complexity_normalized_list[:len(x1_y1_IQR_list)-50], d2_repeat_times)
+
+# heatmap plotting
+import numpy as np
+import seaborn as sn
+import matplotlib.pyplot as plt
+
+data = x1_y1_peaks_composition_complexity_normalized_matrix # edit the data and data_name to plot different heatmaps with the data stored above
+data_name = 'x1-y1 peaks composition complexity normalized'
+
+con_data = np.vstack(data)
+sn.set(rc = {'figure.figsize':(50, 50)})
+heatmap_data = sn.heatmap(data=con_data, annot=True, annot_kws={"size":20}, cmap="mako")
+# d1 tick labels
+d1_ticklabels = 0
+list_d1_ticklabels = []
+while d1_ticklabels < 9.8:
+    list_d1_ticklabels.append('{:,}'.format(round(d1_ticklabels, 5)))
+    d1_ticklabels += 0.2
+# d2 tick labels
+d2_ticklabels = 0
+list_d2_ticklabels = []
+while d2_ticklabels < 9.8:
+    list_d2_ticklabels.append('{:,}'.format(round(d2_ticklabels, 5)))
+    d2_ticklabels += 0.2
+# heatmap plotting
+heatmap_data.set_xticklabels(list_d1_ticklabels, fontsize=25)
+heatmap_data.set_yticklabels(list_d2_ticklabels, fontsize=25)
+heatmap_data.invert_yaxis()
+heatmap_data.set_title('{}'.format(data_name), fontsize=60)
+heatmap_data.set_xlabel('d1', fontsize=60)
+heatmap_data.set_ylabel('d2', fontsize=60)
+cbar = heatmap_data.collections[0].colorbar
+cbar.ax.tick_params(labelsize=60)
+plt.show()
+print(heatmap_data)
