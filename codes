@@ -1,0 +1,253 @@
+# packages & definitions
+import csv
+import numpy as np
+from scipy.integrate import odeint
+from scipy.stats import rankdata
+import scipy as scipy
+import string
+import glob
+import warnings
+import math
+import itertools
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import matplotlib.animation as animation
+import matplotlib.collections as mcoll
+import matplotlib.path as mpath
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.ticker import MaxNLocator
+
+def ordinal_distribution_and_permutation_entropy(data, dx, dy, taux, tauy, return_missing=False, tie_precision=None):
+
+    try:
+        ny, nx = np.shape(data) 
+        data   = np.array(data)
+    except:
+        nx     = np.shape(data)[0]
+        ny     = 1
+        data   = np.array([data])
+
+    if tie_precision is not None:
+        data = np.round(data, tie_precision)
+
+    partitions = np.concatenate(
+        [
+            [np.concatenate(data[j:j+dy*tauy:tauy,i:i+dx*taux:taux]) for i in range(nx-(dx-1)*taux)] 
+            for j in range(ny-(dy-1)*tauy)
+        ]
+    )
+
+    symbols = np.apply_along_axis(rankdata, 1, partitions, method='min') - 1
+    symbols, symbols_count = np.unique(symbols, return_counts=True, axis=0)
+
+    probabilities = symbols_count/len(partitions)
+    
+    PE_raw=0
+    for i in range(len(symbols)-1):
+        PE_raw += -(probabilities[i]*math.log(probabilities[i],2))
+    PE_norm=PE_raw/math.log(np.math.factorial(dx),2)
+    
+    return symbols, probabilities, PE_norm
+    
+import scipy
+import scipy.signal
+
+def two_lorenz_odes(X, t):
+    x1, x2, x3, y1, y2, y3 = X
+    dx1 = sigma1*(x2-x1)+d1*(y1-x1)
+    dx2 = -x1*x3+rho1*x1-x2+d2*(y2-x2)
+    dx3 = x1*x2-beta1*x3+d3*(y3-x3)
+    dy1 = sigma2*(y2-y1)+d1*(x1-y1)
+    dy2 = -y1*y3+rho2*y1-y2+d2*(x2-y2)
+    dy3 = y1*y2-beta2*y3+d3*(x3-y3)
+    return (dx1, dx2, dx3, dy1, dy2, dy3)
+
+y0 = [0, 1, 0, 1, 1, 1]
+
+def IQR(data):
+    q1, q3 = np.percentile(data, [25, 75])
+    iqr = q3 - q1
+    return iqr
+
+def time_series_graph(data):
+    time_series_graph = plt.figure(figsize=(20,5),dpi=200)
+    plt.plot(t, data[:len(data)], linewidth=1)
+    plt.xlabel("t", fontsize=15)
+    plt.ylabel("{}".format(data_name), fontsize=15)
+    plt.title("Lorenz Attractors Coupled, sigma1={}, rho1={}, beta1={}, sigma2={}, rho2={}, beta2={}, d1={}, d2={}, d3={}".format(round(sigma1,2), round(rho1,2), round(beta1,2), round(sigma2,2), round(rho2,2), round(beta2,2), round(d1,2), round(d2,2), round(d3,2)))
+    return time_series_graph
+
+def peaks_list_def(data):
+    data_index = 0
+    turning_point_index_old = data_index
+    peaks_list = []
+    while data_index < len(data):
+        if data[data_index-1]*data[data_index]<0:
+            turning_point_index_new = data_index
+            peaks_raw=scipy.signal.find_peaks(data[turning_point_index_old:turning_point_index_new])
+            number_of_peaks=len(peaks_raw[0])
+            if data[data_index-1]>0 and data[data_index]<0:
+                peaks_list.append(number_of_peaks)
+            if data[data_index-1]<0 and data[data_index]>0:
+                peaks_list.append(number_of_peaks*(-1))
+            turning_point_index_old = turning_point_index_new
+            data_index += 1
+        else:
+            data_index += 1
+    return peaks_list
+
+def peaks_list_times_series_graph(peaks_list_data):
+    x_axis = list(range(len(peaks_list_data)))
+    y_axis = peaks_list_data
+    peaks_list_times_series_graph = plt.figure(figsize=(20,6),dpi=200)
+    plt.plot(x_axis, y_axis, linewidth=1)
+    plt.xlabel("sign change", fontsize=10)
+    plt.ylabel("number of peaks", fontsize=10)
+    plt.title("{} peak distribution, sigma1={}, rho1={}, beta1={}, sigma2={}, rho2={}, beta2={}, d1={}, d2={}, d3={}".format(data_name, round(sigma1,2), round(rho1,2), round(beta1,2), round(sigma2,2), round(rho2,2), round(beta2,2), round(d1,2), round(d2,2), round(d3,2)))
+    return peaks_list_times_series_graph
+
+def peak_distribution_raw_data(peaks_list_data):
+    OD_and_PE=ordinal_distribution_and_permutation_entropy(peaks_list_data, dx=3, dy=1, taux=1, tauy=1)
+    ordinal_patterns=OD_and_PE[0].tolist()
+    probabilities=OD_and_PE[1].tolist()
+    OD_pattern_012=probabilities[0]
+    OD_pattern_210=probabilities[len(probabilities)-1]
+    ordinal_difference=OD_pattern_012-OD_pattern_210
+    permutation_entropy=OD_and_PE[2].tolist()
+    return ordinal_patterns, probabilities, ordinal_difference, permutation_entropy
+
+def my_autopct(pct):
+    return ('%.2f' % pct) if pct > 1 else ''
+
+def peak_ordinal_pattern_pie_chart(ordinal_patterns_data, probabilities_data):
+    data_pie={"ordinal patterns":ordinal_patterns_data, "probabilities":probabilities_data}
+    dataframe = pd.DataFrame(data_pie)
+    peak_ordinal_pattern_pie_chart = plt.figure(figsize =(10, 7),dpi=200) # plotting OD pie chart
+    plt.pie(probabilities_data, autopct=my_autopct, labels = ordinal_patterns_data)
+    plt.legend(ordinal_patterns, loc="center right")
+    plt.title("{} peak distribution, sigma1={}, rho1={}, beta1={}, sigma2={}, rho2={}, beta2={}, d1={}, d2={}, d3={}".format(data_name, round(sigma1,2), round(rho1,2), round(beta1,2), round(sigma2,2), round(rho2,2), round(beta2,2), round(d1,2), round(d2,2), round(d3,2)))
+    return peak_ordinal_pattern_pie_chart
+
+def peaks_composition_raw_data(peaks_list_data):
+    peaks_list_set=list(set(peaks_list_data))
+    peaks_list_set.sort()
+    index_peaks_list_set = 0
+    count_list = []
+    count_list_normalized = []
+    for number in peaks_list_set:
+        count_list.append(peaks_list.count(number))
+        count_list_normalized.append(peaks_list.count(number)/len(peaks_list_data))
+    return peaks_list_set, count_list_normalized
+
+def peaks_composition_complexity_def(count_list_normalized_data):
+    peaks_composition_complexity=0
+    for ele in count_list_normalized_data:
+        peaks_composition_complexity += ele*math.log(ele,2)
+    peaks_composition_complexity_normalized = peaks_composition_complexity/math.log(len(count_list_normalized_data),2)
+    return peaks_composition_complexity, peaks_composition_complexity_normalized
+
+def peaks_composition_pie_chart(peaks_list_set_data, count_list_normalized_data):
+    data_pie={"number of peaks":peaks_list_set_data, "probabilities":count_list_normalized_data}
+    dataframe = pd.DataFrame(data_pie)
+    peaks_composition_pie_chart = plt.figure(figsize =(10, 7),dpi=200)
+    centre_circle = plt.Circle((0,0),0.70,fc='white')
+    fig = plt.gcf()
+    fig.gca().add_artist(centre_circle)
+    plt.pie(count_list_normalized_data, autopct=my_autopct, labels = peaks_list_set_data)
+    plt.legend(peaks_list_set_data, loc="best")
+    plt.title("{} peaks composition, sigma1={}, rho1={}, beta1={}, sigma2={}, rho2={}, beta2={}, d1={}, d2={}, d3={}".format(data_name, round(sigma1,2), round(rho1,2), round(beta1,2), round(sigma2,2), round(rho2,2), round(beta2,2), round(d1,2), round(d2,2), round(d3,2)))
+    return fig
+
+# system parameters setting
+sigma1 = 10
+rho1 = 50
+beta1 = 8/3
+sigma2 = 10
+rho2 = 40
+beta2 = 8/3
+tmax = 100
+
+t = np.arange(0.0, tmax, 0.001)
+
+x1_IQR_list = []
+x1_number_of_crossings_list = []
+x1_peak_PE_list = []
+x1_y1_IQR_list = []
+x1_y1_number_of_crossings_list = []
+x1_y1_peak_PE_list = []
+x1_y1_peaks_composition_complexity_list = []
+x1_y1_peaks_composition_complexity_normalized_list = []
+
+from itertools import repeat
+d1 = 0
+d2 = 0
+d1max = 10
+d2max = 10
+stepsize = 0.2
+d3 = 0
+d2_repeat_times = int((d2max-d2)/stepsize)
+d1_list_inner_layer = []
+d1_list_outer_layer = []
+d2_list = []
+
+while d2 < d2max:
+    while d1 < d1max:
+        d1_list_inner_layer.append(d1)
+        d1 += stepsize
+    d1_list_outer_layer.extend(d1_list_inner_layer)
+    d2_list.extend(repeat(d2, d2_repeat_times))
+    d2 += stepsize
+
+# running the algorithm
+k = 0
+while k<len(d1_list_outer_layer) and k<len(d2_list):
+    
+    d1=d1_list_outer_layer[k]
+    d2=d2_list[k]
+
+    X = odeint(two_lorenz_odes, y0, t, rtol=1e-6)
+    x1, x2, x3, y1, y2, y3 = X.T
+
+    # plt.figure(figsize=(5,5),dpi=200)
+    # plt.plot(x1[:len(x1)], y1[:len(y1)], linewidth=1)
+    # plt.xlabel(r'$x_1$', fontsize=15)
+    # plt.ylabel(r'$y_1$', fontsize=15)
+    # plt.title("sigma1={}, rho1={}, beta1={}, sigma2={}, rho2={}, beta2={}, d1={}, d2={}, d3={}".format(round(sigma1,2), round(rho1,2), round(beta1,2), round(sigma2,2), round(rho2,2), round(beta2,2), round(d1,2), round(d2,2), round(d3,2)))
+    # plt.show()
+
+    data=x1-y1
+    data_name="x1-y1"
+    # inter-quartile range
+    # print("{} IQR={}".format(data_name, IQR(data)))
+    x1_y1_IQR_list.append(IQR(data))
+    # time series graph
+    # print(time_series_graph(data))
+    # peak list
+    peaks_list = peaks_list_def(data)
+    x1_y1_number_of_crossings_list.append(len(peaks_list))
+    # peak list time series graph
+    # print(peaks_list_times_series_graph(peaks_list))
+    # peak distribution PE and OD raw data
+    ordinal_patterns = peak_distribution_raw_data(peaks_list)[0]
+    probabilities = peak_distribution_raw_data(peaks_list)[1]
+    ordinal_difference = peak_distribution_raw_data(peaks_list)[2]
+    permutation_entropy = peak_distribution_raw_data(peaks_list)[3]
+    # peak distribution PE
+    # print("PE of {} peak distribution={}".format(data_name, permutation_entropy))
+    x1_y1_peak_PE_list.append(permutation_entropy)
+    # peak distribution OD pie chart
+    # print(peak_ordinal_pattern_pie_chart(ordinal_patterns, probabilities))
+    # peak composition raw data
+    peaks_list_set = peaks_composition_raw_data(peaks_list)[0]
+    count_list_normalized = peaks_composition_raw_data(peaks_list)[1]
+    # peak composition complexity
+    x1_y1_peaks_composition_complexity = peaks_composition_complexity_def(count_list_normalized)[0]
+    x1_y1_peaks_composition_complexity_normalized = peaks_composition_complexity_def(count_list_normalized)[1]
+    x1_y1_peaks_composition_complexity_list.append(x1_y1_peaks_composition_complexity)
+    x1_y1_peaks_composition_complexity_normalized_list.append(x1_y1_peaks_composition_complexity_normalized)
+    # peak composition pie chart
+    # print(peaks_composition_pie_chart(peaks_list_set, count_list_normalized))
+
+    k+=1
