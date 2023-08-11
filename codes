@@ -252,12 +252,20 @@ while k<len(d1_list_outer_layer) and k<len(d2_list):
 
     k+=1
 
-# storing data for heatmap
+# transforming data for heatmap
 x1_y1_IQR_matrix = np.array_split(x1_y1_IQR_list[:len(x1_y1_IQR_list)-50], d2_repeat_times)
 x1_y1_number_of_crossings_matrix = np.array_split(x1_y1_number_of_crossings_list[:len(x1_y1_IQR_list)-50], d2_repeat_times)
 x1_y1_peak_PE_matrix = np.array_split(x1_y1_peak_PE_list[:len(x1_y1_IQR_list)-50], d2_repeat_times)
 x1_y1_peaks_composition_complexity_matrix = np.array_split(x1_y1_peaks_composition_complexity_list[:len(x1_y1_IQR_list)-50], d2_repeat_times)
 x1_y1_peaks_composition_complexity_normalized_matrix = np.array_split(x1_y1_peaks_composition_complexity_normalized_list[:len(x1_y1_IQR_list)-50], d2_repeat_times)
+
+# storing data for heatmap
+from numpy import savetxt
+savetxt('d1_d2_0-10_x1_y1_IQR_matrix.csv', x1_y1_IQR_matrix, delimiter=',')
+savetxt('d1_d2_0-10_x1_y1_number_of_crossings_matrix.csv', x1_y1_number_of_crossings_matrix, delimiter=',')
+savetxt('d1_d2_0-10_x1_y1_peak_PE_matrix.csv', x1_y1_peak_PE_matrix, delimiter=',')
+savetxt('d1_d2_0-10_x1_y1_peaks_composition_complexity_matrix.csv', x1_y1_peaks_composition_complexity_matrix, delimiter=',')
+savetxt('d1_d2_0-10_x1_y1_peaks_composition_complexity_normalized_matrix.csv', x1_y1_peaks_composition_complexity_normalized_matrix, delimiter=',')
 
 # retrieving data for heatmap
 from numpy import loadtxt
