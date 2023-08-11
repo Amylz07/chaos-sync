@@ -259,6 +259,14 @@ x1_y1_peak_PE_matrix = np.array_split(x1_y1_peak_PE_list[:len(x1_y1_IQR_list)-50
 x1_y1_peaks_composition_complexity_matrix = np.array_split(x1_y1_peaks_composition_complexity_list[:len(x1_y1_IQR_list)-50], d2_repeat_times)
 x1_y1_peaks_composition_complexity_normalized_matrix = np.array_split(x1_y1_peaks_composition_complexity_normalized_list[:len(x1_y1_IQR_list)-50], d2_repeat_times)
 
+# retrieving data for heatmap
+from numpy import loadtxt
+x1_y1_IQR_matrix=loadtxt('d1_d2_0-10_x1_y1_IQR_matrix.csv', delimiter=',')
+x1_y1_number_of_crossings_matrix=loadtxt('d1_d2_0-10_x1_y1_number_of_crossings_matrix.csv', delimiter=',')
+x1_y1_peak_PE_matrix=loadtxt('d1_d2_0-10_x1_y1_peak_PE_matrix.csv', delimiter=',')
+x1_y1_peaks_composition_complexity_matrix=loadtxt('d1_d2_0-10_x1_y1_peaks_composition_complexity_matrix.csv', delimiter=',')
+x1_y1_peaks_composition_complexity_normalized_matrix=loadtxt('d1_d2_0-10_x1_y1_peaks_composition_complexity_normalized_matrix.csv', delimiter=',')
+
 # heatmap plotting
 import numpy as np
 import seaborn as sn
